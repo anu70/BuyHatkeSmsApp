@@ -6,6 +6,8 @@
     <uses-permission android:name="android.permission.SEND_SMS" />
     <uses-permission android:name="android.permission.INTERNET"></uses-permission>
     <uses-permission android:name="android.permission.RECEIVE_SMS"></uses-permission>
+    <uses-permission android:name="android.permission.USE_CREDENTIALS" />
+    <uses-permission android:name="android.permission.GET_ACCOUNTS" />
 
     <application
         android:allowBackup="true"
@@ -25,7 +27,11 @@
         <activity android:name=".SendSms"></activity>
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value= "AIzaSyD1INNl-lUJh_hDNXFQRnQY85E625D5BMA"/>
+            android:value= "AIzaSyCq-JeWNNNf6saKGLDn9cl_E61sVTvW340	"/>
+
+        <meta-data
+        android:name="com.google.android.gms.version"/>;
+        android:value="@integer/google_play_services_version"/>;
 
         <receiver android:name=".IncomingSms">
             <intent-filter>

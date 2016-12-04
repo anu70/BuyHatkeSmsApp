@@ -1,10 +1,12 @@
 package in.org.verkstad.sms;
 
 import android.content.Intent;
+import android.content.IntentSender;
 import android.database.Cursor;
 import android.net.Uri;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -13,18 +15,29 @@ import android.widget.SearchView;
 import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.ResultCallback;
 import com.google.android.gms.drive.Drive;
+import com.google.android.gms.drive.DriveApi.DriveContentsResult;
+import com.google.android.gms.drive.DriveContents;
+import com.google.android.gms.drive.DriveFolder;
+import com.google.android.gms.drive.MetadataChangeSet;
+import com.google.android.gms.plus.Plus;
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
-import java.util.LinkedList;
 
-public class Inbox extends AppCompatActivity /**implements GoogleApiClient.ConnectionCallbacks,
-        GoogleApiClient.OnConnectionFailedListener**/ {
+public class Inbox extends AppCompatActivity implements GoogleApiClient.ConnectionCallbacks,
+        GoogleApiClient.OnConnectionFailedListener {
     ListView lViewSMS;
     private GoogleApiClient mGoogleApiClient;
+    private boolean fileOperation = false;
     SearchView.OnQueryTextListener listener;
     SearchView search;
     LinkedHashSet<String> name;
@@ -69,8 +82,6 @@ public class Inbox extends AppCompatActivity /**implements GoogleApiClient.Conne
             }
         };
         search.setOnQueryTextListener(listener);
-
-
     }
 
     public void showInListView(ArrayList<String> list){
@@ -117,33 +128,130 @@ public class Inbox extends AppCompatActivity /**implements GoogleApiClient.Conne
         }
     }
 
-   /** @Override
-    protected void onResume() {
-        super.onResume();
-        if (mGoogleApiClient == null) {
-            mGoogleApiClient = new GoogleApiClient.Builder(this)
-                    .addApi(Drive.API)
-                    .addScope(Drive.SCOPE_FILE)
-                    .addConnectionCallbacks(this)
-                    .addOnConnectionFailedListener(this)
-                    .build();
-        }
-
+    public void takeBackUp(View view){
+        mGoogleApiClient = new GoogleApiClient.Builder(this)
+                .addApi(Plus.API)
+                .addScope(Plus.SCOPE_PLUS_LOGIN)
+                .addScope(Plus.SCOPE_PLUS_PROFILE)
+                .addApi(Drive.API).addScope(Drive.SCOPE_FILE)
+                .addScope(Drive.SCOPE_APPFOLDER)
+                .addConnectionCallbacks(this)
+                .addOnConnectionFailedListener(this)
+                .build();
         mGoogleApiClient.connect();
     }
 
     @Override
     public void onConnected(Bundle bundle) {
-        Toast.makeText(getApplicationContext(),"Connected",Toast.LENGTH_SHORT).show();
+        Toast.makeText(getApplicationContext(), "Connected", Toast.LENGTH_SHORT).show();
+        fileOperation = true;
+
+        // create new contents resource
+        Drive.DriveApi.newDriveContents(mGoogleApiClient)
+                .setResultCallback(driveContentsCallback);
     }
+
+    final ResultCallback<DriveContentsResult> driveContentsCallback =
+            new ResultCallback<DriveContentsResult>() {
+        @Override
+        public void onResult(DriveContentsResult result) {
+
+            if (result.getStatus().isSuccess()) {
+
+                if (fileOperation == true) {
+
+                    CreateFileOnGoogleDrive(result);
+
+                }
+            }
+
+        }
+    };
+
+    public void CreateFileOnGoogleDrive(DriveContentsResult result){
+
+        final DriveContents driveContents = result.getDriveContents();
+
+        // Perform I/O off the UI thread.
+        new Thread() {
+            @Override
+            public void run() {
+                // write content to DriveContents
+                OutputStream outputStream = driveContents.getOutputStream();
+                Writer writer = new OutputStreamWriter(outputStream);
+
+                try {
+                    writer.write("Message backup here:"+"\n"+"\n");
+                   Iterator<String> iterator = name.iterator();
+                    int p =0;
+                    while (iterator.hasNext()){
+                        writer.write("SENDER: "+iterator.next() +"\n");
+                        if(p<sms.size()){
+                            for(int i=0;i<sms.get(p).size();i++){
+                                writer.write(sms.get(p).get(i)+"\n"+"\n");
+                            }
+                        }
+
+                        writer.write("\n"+"\n"+"\n");
+                        p++;
+                    }
+                    writer.close();
+                } catch (IOException e) {
+                    Log.e("ExceptionInWrittingMsgs",e.getMessage());
+                }
+
+                MetadataChangeSet changeSet = new MetadataChangeSet.Builder()
+                        .setTitle("SMSAPP")
+                .setMimeType("text/plain")
+                .setStarred(true).build();
+
+                // create a file in root folder
+                Drive.DriveApi.getRootFolder(mGoogleApiClient)
+                        .createFile(mGoogleApiClient, changeSet, driveContents)
+                        .setResultCallback(fileCallback);
+            }
+        }.start();
+    }
+
+    final private ResultCallback<DriveFolder.DriveFileResult> fileCallback = new
+    ResultCallback<DriveFolder.DriveFileResult>() {
+        @Override
+        public void onResult(DriveFolder.DriveFileResult result) {
+            if (result.getStatus().isSuccess()) {
+
+                Toast.makeText(getApplicationContext(), "created file "+
+                        result.getDriveFile().getDriveId(), Toast.LENGTH_LONG).show();
+
+            }
+
+            return;
+
+        }
+    };
+
+
 
     @Override
     public void onConnectionSuspended(int i) {
-        Toast.makeText(getApplicationContext(),"Connection Suspended",Toast.LENGTH_SHORT).show();
+
     }
 
     @Override
-    public void onConnectionFailed(ConnectionResult connectionResult) {
-        Toast.makeText(getApplicationContext(),"Connection Failed: "+connectionResult,Toast.LENGTH_SHORT).show();
-    }**/
+    public void onConnectionFailed(ConnectionResult result) {
+        if (!result.hasResolution()) {
+
+            // show the localized error dialog.
+            GoogleApiAvailability.getInstance().getErrorDialog(this, result.getErrorCode(), 0).show();
+            return;
+        }
+
+        try {
+
+            result.startResolutionForResult(this, 5);
+
+        } catch (IntentSender.SendIntentException e) {
+
+            Log.e("Exception", e.toString());
+        }
+    }
 }

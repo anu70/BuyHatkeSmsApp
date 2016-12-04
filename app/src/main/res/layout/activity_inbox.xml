@@ -22,15 +22,14 @@
         android:layout_height="wrap_content" >
     </ListView>
 
-  <!--  <Button
+    <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Take Backup"
         android:id="@+id/button4"
-        android:layout_alignTop="@+id/listViewSMS"
-        android:layout_alignRight="@+id/listViewSMS"
-        android:layout_alignEnd="@+id/listViewSMS"
-        android:onClick="takeBackUp"/> -->
+       android:layout_alignParentBottom="true"
+        android:layout_alignParentRight="true"
+        android:onClick="takeBackUp"/>
 
 
 
