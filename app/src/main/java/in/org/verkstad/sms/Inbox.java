@@ -239,6 +239,15 @@ public class Inbox extends AppCompatActivity implements GoogleApiClient.Connecti
         }
     };
 
+    protected void onStop() {
+        super.onStop();
+        if (mGoogleApiClient != null) {
+
+            // disconnect Google Android Drive API connection.
+            mGoogleApiClient.disconnect();
+        }
+        super.onPause();
+    }
 
 
     @Override
