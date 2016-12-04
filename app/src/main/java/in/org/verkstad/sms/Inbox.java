@@ -36,6 +36,7 @@ import java.util.LinkedHashSet;
 public class Inbox extends AppCompatActivity implements GoogleApiClient.ConnectionCallbacks,
         GoogleApiClient.OnConnectionFailedListener {
     ListView lViewSMS;
+    ListView lViewSMS2;
     private GoogleApiClient mGoogleApiClient;
     private boolean fileOperation = false;
     SearchView.OnQueryTextListener listener;
@@ -48,6 +49,7 @@ public class Inbox extends AppCompatActivity implements GoogleApiClient.Connecti
         setContentView(R.layout.activity_inbox);
         search = (SearchView) findViewById(R.id.searchView);
         lViewSMS = (ListView) findViewById(R.id.listViewSMS);
+        lViewSMS2 = (ListView) findViewById(R.id.listViewSMS2);
         fetchInbox();
         showInListView(new ArrayList<String>(name));
         listener = new SearchView.OnQueryTextListener() {
@@ -75,7 +77,7 @@ public class Inbox extends AppCompatActivity implements GoogleApiClient.Connecti
                         }
                     }
 
-                    showInListView(filteredList);
+                    showInListView2(filteredList);
                 }
 
                 return true;
@@ -85,8 +87,16 @@ public class Inbox extends AppCompatActivity implements GoogleApiClient.Connecti
     }
 
     public void showInListView(ArrayList<String> list){
+        lViewSMS2.setVisibility(View.GONE);
+        lViewSMS.setVisibility(View.VISIBLE);
         ArrayAdapter adapter = new ArrayAdapter(this, android.R.layout.simple_list_item_1, list);
         lViewSMS.setAdapter(adapter);
+    }
+    public void showInListView2(ArrayList<String> list){
+        lViewSMS.setVisibility(View.GONE);
+        lViewSMS2.setVisibility(View.VISIBLE);
+        ArrayAdapter adapter = new ArrayAdapter(this, android.R.layout.simple_list_item_1, list);
+        lViewSMS2.setAdapter(adapter);
     }
 
     public void fetchInbox()
